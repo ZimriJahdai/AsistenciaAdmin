@@ -1,0 +1,70 @@
+<section class="student-insights">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Seguimiento</p>
+      <h2>Resumen por alumno</h2>
+    </div>
+    <span>{{ insights.length }} alumno(s)</span>
+  </div>
+
+  @if (!insights.length) {
+    <div class="empty-state">
+      <mat-icon>person_search</mat-icon>
+      <p>No hay alumnos para resumir todavía.</p>
+    </div>
+  } @else {
+    <div class="student-grid">
+      @for (student of insights; track trackByStudent($index, student)) {
+        <article class="student-card">
+          <div class="student-topline">
+            <div>
+              <h3>{{ student.fullName }}</h3>
+              <p>{{ student.phone || 'Sin telefono' }}</p>
+            </div>
+            <span hlmBadge variant="secondary">{{ student.classNames.join(', ') }}</span>
+          </div>
+
+          <div class="student-metrics">
+            <div>
+              <span>Asistencias</span>
+              <strong>{{ student.attendanceCount }}</strong>
+            </div>
+            <div>
+              <span>Faltas estimadas</span>
+              <strong>{{ student.missedCount }}</strong>
+            </div>
+            <div>
+              <span>Ultima asistencia</span>
+              <strong>{{ student.lastAttendance | date: 'dd/MM/yyyy' }}</strong>
+            </div>
+          </div>
+
+          <div class="student-meta">
+            <mat-icon>supervisor_account</mat-icon>
+            <span>{{ student.leaderNames.join(', ') }}</span>
+          </div>
+
+          <div class="comments-panel">
+            <div class="comments-title">
+              <mat-icon>chat_bubble</mat-icon>
+              <span>Comentarios</span>
+            </div>
+
+            @if (student.comments.length) {
+              <div class="comment-list">
+                @for (record of student.comments; track trackByRecord($index, record)) {
+                  <p>
+                    <strong>{{ record.createdAt | date: 'dd/MM/yyyy' }}</strong>
+                    {{ record.comment }}
+                  </p>
+                }
+              </div>
+            } @else {
+              <p class="no-comments">Sin comentarios registrados.</p>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>

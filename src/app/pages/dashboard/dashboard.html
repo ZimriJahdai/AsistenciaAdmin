@@ -1,0 +1,238 @@
+<div class="admin-layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">
+        <mat-icon>church</mat-icon>
+      </div>
+      <div>
+        <span>Jesus es el camino</span>
+        <small>Admin Console</small>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Principal">
+      <a class="nav-item active">
+        <mat-icon>space_dashboard</mat-icon>
+        Dashboard
+      </a>
+      <a class="nav-item">
+        <mat-icon>groups</mat-icon>
+        Asistencias
+      </a>
+      <a class="nav-item">
+        <mat-icon>map</mat-icon>
+        Ubicaciones
+      </a>
+      <a class="nav-item">
+        <mat-icon>download</mat-icon>
+        Exportaciones
+      </a>
+    </nav>
+
+    <div class="sidebar-card">
+      <span>Estado</span>
+      <strong>Sistema activo</strong>
+      <p>Los registros se sincronizan desde el backend protegido.</p>
+    </div>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Administración</p>
+        <h1>Panel de asistencia</h1>
+      </div>
+
+      <div class="topbar-actions">
+        <button hlmBtn variant="outline" type="button" (click)="loadRecords()">
+          <mat-icon>refresh</mat-icon>
+          Actualizar
+        </button>
+
+        <button hlmBtn type="button" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          Salir
+        </button>
+      </div>
+    </header>
+
+    <main class="dashboard-shell">
+      <section class="hero">
+        <div>
+          <h2>Registros de asistencia</h2>
+          <p>Consulta, filtra y exporta las asistencias enviadas desde el formulario público.</p>
+        </div>
+      </section>
+
+      <section class="stats-grid">
+        <mat-card class="stat-card">
+          <mat-icon>groups</mat-icon>
+          <div>
+            <span>Total registros</span>
+            <strong>{{ records().length }}</strong>
+          </div>
+        </mat-card>
+
+        <mat-card class="stat-card">
+          <mat-icon>today</mat-icon>
+          <div>
+            <span>Hoy</span>
+            <strong>{{ totalToday() }}</strong>
+          </div>
+        </mat-card>
+
+        <mat-card class="stat-card">
+          <mat-icon>category</mat-icon>
+          <div>
+            <span>Grupos</span>
+            <strong>{{ totalGroups() }}</strong>
+          </div>
+        </mat-card>
+      </section>
+
+      <mat-card class="table-card">
+        <div class="table-header">
+          <div>
+            <h2>Asistencias recibidas</h2>
+            <p>{{ filteredRecords().length }} resultado(s)</p>
+          </div>
+
+          <div class="table-actions">
+            <label class="filter-field search-field">
+              <span>Buscar</span>
+              <input
+                hlmInput
+                type="search"
+                [value]="query()"
+                (input)="updateSearch($any($event.target).value)"
+                placeholder="Nombre, grupo, líder o teléfono"
+              />
+            </label>
+
+            <label class="filter-field date-field">
+              <span>Fecha</span>
+              <input hlmInput type="date" [value]="selectedDate()" (input)="updateDate($any($event.target).value)" />
+            </label>
+
+            <button hlmBtn variant="outline" type="button" (click)="clearFilters()">
+              <mat-icon>filter_alt_off</mat-icon>
+              Limpiar filtros
+            </button>
+
+            <button
+              class="danger-button"
+              hlmBtn
+              variant="outline"
+              type="button"
+              [disabled]="!selectedIds().size || deleting()"
+              (click)="deleteSelectedRecords()"
+            >
+              @if (deleting()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                <mat-icon>delete</mat-icon>
+              }
+              Eliminar seleccionados
+              @if (selectedIds().size) {
+                <span>({{ selectedIds().size }})</span>
+              }
+            </button>
+
+            <button hlmBtn type="button" [disabled]="!filteredRecords().length" (click)="exportCsv()">
+              <mat-icon>download</mat-icon>
+              Exportar Excel
+            </button>
+          </div>
+        </div>
+
+        @if (loading()) {
+          <div class="state-box">
+            <mat-spinner diameter="42" />
+            <p>Cargando asistencias...</p>
+          </div>
+        } @else if (error()) {
+          <div class="state-box error-box">
+            <mat-icon>error</mat-icon>
+            <p>{{ error() }}</p>
+          </div>
+        } @else if (!filteredRecords().length) {
+          <div class="state-box">
+            <mat-icon>inventory_2</mat-icon>
+            <p>No hay registros para mostrar.</p>
+          </div>
+        } @else {
+          <div class="table-scroll">
+            <table mat-table [dataSource]="filteredRecords()">
+              <ng-container matColumnDef="select">
+                <th mat-header-cell *matHeaderCellDef>
+                  <input
+                    class="row-checkbox"
+                    type="checkbox"
+                    aria-label="Seleccionar registros filtrados"
+                    [checked]="allFilteredSelected()"
+                    (change)="toggleFilteredRecords($any($event.target).checked)"
+                  />
+                </th>
+                <td mat-cell *matCellDef="let record">
+                  <input
+                    class="row-checkbox"
+                    type="checkbox"
+                    aria-label="Seleccionar registro"
+                    [checked]="selectedIds().has(record._id)"
+                    (change)="toggleRecord(record, $any($event.target).checked)"
+                  />
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="student">
+                <th mat-header-cell *matHeaderCellDef>Alumno</th>
+                <td mat-cell *matCellDef="let record">
+                  <strong>{{ record.fullName }}</strong>
+                  @if (record.comment) {
+                    <small>{{ record.comment }}</small>
+                  }
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="className">
+                <th mat-header-cell *matHeaderCellDef>Clase</th>
+                <td mat-cell *matCellDef="let record">
+                  <span hlmBadge variant="secondary">{{ record.className }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="leaderName">
+                <th mat-header-cell *matHeaderCellDef>Líder</th>
+                <td mat-cell *matCellDef="let record">{{ record.leaderName }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="phone">
+                <th mat-header-cell *matHeaderCellDef>Teléfono</th>
+                <td mat-cell *matCellDef="let record">{{ record.phone }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="date">
+                <th mat-header-cell *matHeaderCellDef>Fecha</th>
+                <td mat-cell *matCellDef="let record">{{ record.createdAt | date: 'dd/MM/yyyy, h:mm a' }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="location">
+                <th mat-header-cell *matHeaderCellDef>Ubicación</th>
+                <td mat-cell *matCellDef="let record">
+                  <button hlmBtn size="icon" variant="ghost" type="button" matTooltip="Abrir en Google Maps" (click)="openMaps(record)">
+                    <mat-icon>map</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+            </table>
+          </div>
+        }
+      </mat-card>
+
+      <app-student-insights [records]="records()" />
+    </main>
+  </section>
+</div>
